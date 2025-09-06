@@ -5,6 +5,7 @@ go 1.24.2
 require (
 	github.com/Rustamchick/protobuff v0.0.3
 	github.com/ilyakaznacheev/cleanenv v1.5.0
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.74.2

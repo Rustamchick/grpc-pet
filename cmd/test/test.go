@@ -3,6 +3,7 @@ package main
 import (
 	grpcapp "grpc-pet/pkg/app/grpc"
 	"grpc-pet/pkg/config"
+	Service "grpc-pet/pkg/service"
 	"time"
 
 	grpcpetv1 "github.com/Rustamchick/protobuff/gen/go/pet"
@@ -22,7 +23,8 @@ func main() {
 
 	cfg := config.InitConfig()
 
-	app := grpcapp.New(log, cfg.GRPC.Port)
+	authService := Service.NewAuthService()
+	app := grpcapp.New(log, cfg.GRPC.Port, authService)
 	app.MustRun()
 
 	go func(app *grpcapp.App) {
@@ -47,7 +49,7 @@ func TestAll(cfg config.Config, Log *logrus.Logger) {
 	}
 
 	if cfg == cfg_t {
-		log.Info("config \033[32mCORRECT\033[0m")
+		log.Info("config \033[32mCONNECTED\033[0m")
 	}
 
 	req := grpcpetv1.RegisterRequest{}
@@ -55,7 +57,7 @@ func TestAll(cfg config.Config, Log *logrus.Logger) {
 	// if proto.Equal(req, req2) {}
 
 	if req.Email == "" { // в будущем подумаю о нормальной тестировке этого пакета,
-		log.Infof("Protobuff \033[32mCORRECT\033[0m") //  но пока что по сути только вывожу красивую надпись
+		log.Infof("Protobuff \033[32mCONNECTED\033[0m") //  но пока что по сути только вывожу красивую надпись
 	}
 
 }

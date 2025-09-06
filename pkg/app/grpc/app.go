@@ -2,7 +2,8 @@ package grpcapp
 
 import (
 	"fmt"
-	authgrpc "grpc-pet/pkg/auth"
+	"grpc-pet/pkg/handler"
+	Service "grpc-pet/pkg/service"
 	"net"
 
 	"github.com/sirupsen/logrus"
@@ -15,10 +16,10 @@ type App struct {
 	port       int
 }
 
-func New(log *logrus.Logger, port int) *App {
+func New(log *logrus.Logger, port int, authService *Service.AuthService) *App {
 	gRPCServer := grpc.NewServer()
 
-	authgrpc.Register(gRPCServer)
+	handler.Register(gRPCServer, authService)
 
 	return &App{
 		log:        log,
@@ -34,7 +35,7 @@ func (a *App) MustRun() {
 }
 
 func (a *App) Run() error {
-	const op = "grpcapp.Run"
+	const op = "grpcapp.Run()"
 
 	log := a.log.WithField("op", op)
 

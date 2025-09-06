@@ -3,6 +3,7 @@ package main
 import (
 	"grpc-pet/pkg/app"
 	"grpc-pet/pkg/config"
+	Service "grpc-pet/pkg/service"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,7 +24,9 @@ func main() {
 
 	cfg := config.InitConfig()
 
-	application := app.New(log, cfg.GRPC.Port, cfg.Storage_path, cfg.TokenTTL)
+	AuthService := Service.NewAuthService()
+
+	application := app.New(log, cfg.GRPC.Port, cfg.Storage_path, cfg.TokenTTL, AuthService)
 
 	go application.GRPCApp.MustRun()
 
