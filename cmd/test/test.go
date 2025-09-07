@@ -3,6 +3,7 @@ package main
 import (
 	grpcapp "grpc-pet/pkg/app/grpc"
 	"grpc-pet/pkg/config"
+	"grpc-pet/pkg/repository"
 	Service "grpc-pet/pkg/service"
 	"time"
 
@@ -23,7 +24,11 @@ func main() {
 
 	cfg := config.InitConfig()
 
-	authService := Service.NewAuthService()
+	postgresCfg := repository.PostgresConfig{}
+
+	db := repository.NewPostgresDB(postgresCfg)
+	repos := repository.NewRepository(db)
+	authService := Service.NewService(repos)
 	app := grpcapp.New(log, cfg.GRPC.Port, authService)
 	app.MustRun()
 

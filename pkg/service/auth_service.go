@@ -2,34 +2,36 @@ package Service
 
 import (
 	"context"
-
-	"github.com/jmoiron/sqlx"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"grpc-pet/pkg/repository"
 )
 
-type Authentification interface {
-	Login(ctx context.Context, email, password string, appid int) (token string, err error)
-	Register(ctx context.Context, email, password string) (user_id int64, err error)
-	IsAdmin(ctx context.Context, userid int) (bool, error)
-}
-
 type AuthService struct {
-	db sqlx.DB
+	repos repository.Authentification
 }
 
-func NewAuthService() *AuthService { // auth сервисного слоя
-	return &AuthService{}
+func NewAuthService(repos repository.Authentification) *AuthService {
+	return &AuthService{
+		repos: repos,
+	}
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string, appid int) (token string, err error) {
-	return "Service return token", status.Errorf(codes.Unimplemented, "Service. Method Login is not implemented")
+func (s *AuthService) Login(ctx context.Context, email, password string, appid int) (string, error) {
+	token, err := s.repos.Login(ctx, email, password, appid)
+
+	return token, err
+	// "Service return token", status.Errorf(codes.Unimplemented, "Service. Method Login is not implemented")
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password string) (user_id int64, err error) {
-	return -111, status.Errorf(codes.Unimplemented, "Service. Method Register is not implemented")
+func (s *AuthService) Register(ctx context.Context, email, password string) (int64, error) {
+	userid, err := s.repos.Register(ctx, email, password)
+
+	return userid, err
+	// -111, status.Errorf(codes.Unimplemented, "Service. Method Register is not implemented")
 }
 
 func (s *AuthService) IsAdmin(ctx context.Context, userid int) (bool, error) {
-	return false, status.Errorf(codes.Unimplemented, "Service. Method IsAdmin is not implemented")
+	isAdmin, err := s.repos.IsAdmin(ctx, userid)
+
+	return isAdmin, err
+	// false, status.Errorf(codes.Unimplemented, "Service. Method IsAdmin is not implemented")
 }
