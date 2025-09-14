@@ -16,10 +16,10 @@ type App struct {
 	port       int
 }
 
-func New(log *logrus.Logger, port int, authService Service.Authentification) *App {
+func New(log *logrus.Logger, port int, service *Service.Service) *App {
 	gRPCServer := grpc.NewServer()
 
-	handler.Register(gRPCServer, authService)
+	handler.Register(gRPCServer, service)
 
 	return &App{
 		log:        log,
@@ -35,9 +35,9 @@ func (a *App) MustRun() {
 }
 
 func (a *App) Run() error {
-	const op = "grpcapp.Run()"
+	const loc = "grpcapp.Run()"
 
-	log := a.log.WithField("op", op)
+	log := a.log.WithField(loc, loc)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", a.port))
 	if err != nil {
@@ -55,9 +55,9 @@ func (a *App) Run() error {
 }
 
 func (a *App) Stop() {
-	const op = "grpcapp.Stop()"
+	const loc = "grpcapp.Stop()"
 
-	a.log.WithField("op", op).Info("Stopping gRPC server")
+	a.log.WithField("loc", loc).Info("Stopping gRPC server")
 
 	a.gRPCServer.GracefulStop()
 }

@@ -15,8 +15,8 @@ type ServerApi struct {
 	auth Service.Authentification
 }
 
-func Register(gRPC *grpc.Server, auth Service.Authentification) {
-	grpcpetv1.RegisterAuthServer(gRPC, &ServerApi{auth: auth})
+func Register(gRPC *grpc.Server, service *Service.Service) {
+	grpcpetv1.RegisterAuthServer(gRPC, &ServerApi{auth: service})
 }
 
 func (s *ServerApi) Login(ctx context.Context, req *grpcpetv1.LoginRequest) (*grpcpetv1.LoginResponse, error) {
@@ -25,13 +25,13 @@ func (s *ServerApi) Login(ctx context.Context, req *grpcpetv1.LoginRequest) (*gr
 	}
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
-	// if err != nil {
-	// 	return nil, status.Error(codes.Internal, "Internal error. auth.Login()") // dont give away internal errors to clients
-	// }
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error. auth.Login()") // dont give away internal errors to clients
+	}
 
 	return &grpcpetv1.LoginResponse{
 		Token: token,
-	}, err
+	}, nil
 }
 
 func (s *ServerApi) Register(ctx context.Context, req *grpcpetv1.RegisterRequest) (*grpcpetv1.RegisterResponse, error) {
@@ -40,14 +40,14 @@ func (s *ServerApi) Register(ctx context.Context, req *grpcpetv1.RegisterRequest
 	}
 
 	user_id, err := s.auth.Register(ctx, req.GetEmail(), req.GetPassword())
-	// if err != nil {
-	// 	// TODO: handle variative errors (Double registration or invalid login password, etc)
-	// 	return nil, status.Error(codes.Internal, "Internal error. auth.Register()") // dont give away internal errors to clients
-	// }
+	if err != nil {
+		// TODO: handle variative errors (Double registration or invalid login password, etc)
+		return nil, status.Error(codes.Internal, "Internal error. auth.Register()") // dont give away internal errors to clients
+	}
 
 	return &grpcpetv1.RegisterResponse{
 		UserId: user_id,
-	}, err
+	}, nil
 }
 
 func (s *ServerApi) IsAdmin(ctx context.Context, req *grpcpetv1.IsAdminRequest) (*grpcpetv1.IsAdminResponse, error) {
@@ -56,13 +56,13 @@ func (s *ServerApi) IsAdmin(ctx context.Context, req *grpcpetv1.IsAdminRequest) 
 	}
 
 	IsAdmin, err := s.auth.IsAdmin(ctx, int(req.GetUserId()))
-	// if err != nil {
-	// 	return nil, status.Error(codes.Internal, "Internal error. auth.IsAdmin()") // dont give away internal errors to clients
-	// }
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error. auth.IsAdmin()") // dont give away internal errors to clients
+	}
 
 	return &grpcpetv1.IsAdminResponse{
 		IsAdmin: IsAdmin,
-	}, err
+	}, nil
 }
 
 func LoginIsValid(req *grpcpetv1.LoginRequest) error {

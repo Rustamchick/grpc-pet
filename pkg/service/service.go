@@ -2,7 +2,11 @@ package Service
 
 import (
 	"context"
+	"errors"
 	"grpc-pet/pkg/repository"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Authentification interface {
@@ -15,9 +19,13 @@ type Service struct {
 	Authentification
 }
 
-func NewService(repos repository.Authentification) *Service { // весь сервисный слой
+func NewService(log *logrus.Logger, repos repository.Authentification, AppProvider repository.AppProvider, TokenTTL time.Duration) *Service { // весь сервисный слой
 	return &Service{
-		Authentification: NewAuthService(repos), // auth сервисного слоя
-		// могут добавиться еще функции в сервисный слой
+		Authentification: NewAuthService(log, repos, AppProvider, TokenTTL), // auth сервисного слоя
+
 	}
 }
+
+var (
+	ErrInvalidCredentials = errors.New("Invalid credentials")
+)

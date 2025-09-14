@@ -20,7 +20,7 @@ type GrpcConfig struct {
 }
 
 func InitConfig() Config {
-	path := getConfigPath()
+	path := ConfigPath()
 	if path == "" {
 		panic("Empty config path")
 	}
@@ -36,7 +36,7 @@ func InitConfig() Config {
 	return *cfg
 }
 
-func getConfigPath() string {
+func ConfigPath() string {
 	// в будущем можно сделать дополнительную возможность прописывать путь через флаги
 	res := os.Getenv("CONFIG_PATH")
 	return res
