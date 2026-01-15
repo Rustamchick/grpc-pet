@@ -1,15 +1,14 @@
-package Service
+package AuthService
 
 import (
 	"context"
-	"crypto/sha1"
 	"errors"
-	"fmt"
-	"grpc-pet/pkg/models"
 	"grpc-pet/pkg/repository"
+	AppPostgres "grpc-pet/pkg/repository/postgres/app"
+	AuthPostgres "grpc-pet/pkg/repository/postgres/auth"
+
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,22 +29,23 @@ func NewAuthService(log *logrus.Logger, repos repository.Authentification, AppPr
 	}
 }
 
+var (
+	ErrInvalidCredentials = errors.New("Invalid credentials")
+	ErrUserExists         = errors.New("User already exists")
+	ErrInvalidAppID       = errors.New("Invalid app id")
+	ErrUserNotFound       = errors.New("User not found")
+)
+
 func (s *AuthService) Login(ctx context.Context, email, password string, appid int) (string, error) {
 	const loc = "AuthService.Login()"
 
 	log := s.log.WithField("loc", loc)
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	user, err := s.repos.Login(ctx, email)
 	if err != nil {
-		log.Errorf("Error hashing password: %s", err.Error())
-		return "", err
-	}
-
-	user, err := s.repos.Login(ctx, email, hashedPassword, appid)
-	if err != nil {
-		if errors.Is(err, repository.ErrUserNotExists) {
-			log.Errorf("error login user: %s", err.Error())
-			return "", ErrInvalidCredentials
+		if errors.Is(err, AuthPostgres.ErrUserNotExists) {
+			log.Errorf("Error. User not exist: %s", err.Error())
+			return "", ErrInvalidCredentials // email is not correct
 		}
 		log.Errorf("error login user: %s", err.Error())
 		return "", err
@@ -53,19 +53,26 @@ func (s *AuthService) Login(ctx context.Context, email, password string, appid i
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
 		log.Infof("error CompareHashAndPassword: %s", err.Error())
-		return "", err
+		return "", ErrInvalidCredentials // email correct, incorrect password
 	}
 
 	app, err := s.appProvider.GetApp(ctx, appid)
 	if err != nil {
+		if errors.Is(err, AppPostgres.ErrAppNotFound) {
+			log.Errorf("Error. App not found: %s", err.Error())
+			return "", ErrInvalidAppID // appid is not correct
+		}
 		return "", err
 	}
 
-	token, err := s.GenerateToken(user, app)
+	token, err := GenerateToken(user, app, s.TokenTTL)
 	if err != nil {
-		log.Info("Error generating token: %s", err.Error())
+		log.Infof("Error generating token: %s", err.Error())
 		return "", err
 	}
+
+	log.Info("User logged in successfully")
+
 	return token, nil
 }
 
@@ -82,13 +89,15 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (int
 
 	userid, err := s.repos.RegisterNewUser(ctx, email, hashedPassword)
 	if err != nil {
-		if errors.Is(err, repository.ErrUserExists) {
-			log.Errorf("error registering new user: %s", err.Error())
-			return 0, ErrInvalidCredentials
+		if errors.Is(err, AuthPostgres.ErrUserExists) {
+			log.Errorf("error. User already exist: %s", err.Error())
+			return 0, ErrUserExists
 		}
-		log.Errorf("Error registering new user: %s", err.Error()) // TODO: handle varios errors
+		log.Errorf("Error registering new user: %s", err.Error())
 		return 0, err
 	}
+
+	log.Info("User registered successfully")
 
 	return userid, nil
 }
@@ -97,32 +106,17 @@ func (s *AuthService) IsAdmin(ctx context.Context, userid int) (bool, error) {
 	const loc = "AuthService.IsAdmin()"
 
 	log := s.log.WithField("loc", loc)
+	log.Infof("Check if user is admin. userId: %d", userid)
 
-	log.Infof("Is Admin")
-
-	return false, nil
-}
-
-// GenetateToken does not ready
-func (s *AuthService) GenerateToken(user models.User, app models.App) (string, error) {
-	const signingKey = "fewfdxsf32t4yt22saf4231r"
-
-	claims := &tokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.TokenTTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now())},
-		UserId: user.ID,
+	isAdmin, err := s.repos.IsAdmin(ctx, userid)
+	if err != nil {
+		if errors.Is(err, AuthPostgres.ErrUserNotExists) {
+			log.Infof("Error. App not found.")
+			return isAdmin, ErrUserNotFound
+		}
+		log.Info("Error. IsAdmin. Undefined error.")
+		return false, err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(signingKey))
-}
-
-func generatePasswordHash(password string) string {
-	const salt = "r342fdsg8j8t4g20"
-
-	hash := sha1.New()
-	hash.Write([]byte(password))
-
-	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
+	return isAdmin, nil
 }

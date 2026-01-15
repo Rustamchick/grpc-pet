@@ -7,7 +7,20 @@ tasks:
     desc: "Create tables for db"
     cmds:
       - migrate -path ./migrations -database "postgres://postgres:12345@localhost:5432/postgres?sslmode=disable" up
+
+  up_tables:
+    desc: "Create tables for db using go migrator"
+    cmds:
+      - go run cmd/migrator/main.go --method="up"
+
+  drop_tables:
+    aliases:
+      - main tables
+    desc: "Drop tables for db"
+    cmds:
+      - go run cmd/migrator/main.go --method="down"
+
   run_postgres:
     desc: "Run docker postgres container"
     cmds: 
-      - docker run --name=grpc_pet -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d --rm postgres
+      - docker run --name=rest_grpc_db -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d --rm postgres

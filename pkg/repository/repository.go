@@ -2,16 +2,16 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"grpc-pet/pkg/models"
-	"grpc-pet/pkg/repository/postgres"
+	AppPostgres "grpc-pet/pkg/repository/postgres/app"
+	AuthPostgres "grpc-pet/pkg/repository/postgres/auth"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
 type Authentification interface {
-	Login(ctx context.Context, email string, passHash []byte, appid int) (user models.User, err error)
+	Login(ctx context.Context, email string) (user models.User, err error)
 	RegisterNewUser(ctx context.Context, email string, passHash []byte) (userid int64, err error)
 	IsAdmin(ctx context.Context, userid int) (bool, error)
 }
@@ -29,13 +29,7 @@ type Repository struct {
 
 func NewRepository(log *logrus.Logger, db *sqlx.DB) *Repository {
 	return &Repository{
-		Authentification: postgres.NewAuthPostgres(log, db),
-		AppProvider:      postgres.NewAppPostgres(log, db),
+		Authentification: AuthPostgres.NewAuthPostgres(log, db),
+		AppProvider:      AppPostgres.NewAppPostgres(log, db),
 	}
 }
-
-var (
-	ErrUserExists    = errors.New("User already exist")
-	ErrUserNotExists = errors.New("User doesn't exist ")
-	ErrAppNotFound   = errors.New("App not found")
-)

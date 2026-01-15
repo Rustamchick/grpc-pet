@@ -18,13 +18,14 @@ func main() {
 	log.SetFormatter(&logrus.TextFormatter{ForceColors: true})
 	log.SetLevel(logrus.DebugLevel)
 
-	if err := godotenv.Load(); err != nil {
-		log.Errorf("error loading .env vars: %s", err)
-	}
+	_ = godotenv.Load() // без обработки ошибок, чтобы докер не ругался
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Errorf("error loading .env vars: %s", err)
+	// }
 
 	cfg := config.InitConfig()
 
-	application := app.New(log, cfg.GRPC.Port, cfg.Storage_path, cfg.TokenTTL)
+	application := app.New(log, cfg.GRPC.Port, cfg.TokenTTL)
 
 	go application.GRPCApp.MustRun()
 

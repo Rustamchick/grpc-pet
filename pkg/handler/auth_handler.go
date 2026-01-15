@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"errors"
 	Service "grpc-pet/pkg/service"
+	AuthService "grpc-pet/pkg/service/auth"
 
 	grpcpetv1 "github.com/Rustamchick/protobuff/gen/go/pet"
 	"google.golang.org/grpc"
@@ -26,7 +28,11 @@ func (s *ServerApi) Login(ctx context.Context, req *grpcpetv1.LoginRequest) (*gr
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error. auth.Login()") // dont give away internal errors to clients
+		// TODO
+		if errors.Is(err, AuthService.ErrInvalidCredentials) {
+			return nil, status.Error(codes.NotFound, "Invalid email or password") // Invalid email or password
+		}
+		return nil, status.Error(codes.Internal, "Internal error") // dont give away internal errors to clients
 	}
 
 	return &grpcpetv1.LoginResponse{
@@ -41,8 +47,11 @@ func (s *ServerApi) Register(ctx context.Context, req *grpcpetv1.RegisterRequest
 
 	user_id, err := s.auth.Register(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		// TODO: handle variative errors (Double registration or invalid login password, etc)
-		return nil, status.Error(codes.Internal, "Internal error. auth.Register()") // dont give away internal errors to clients
+		// TODO
+		if errors.Is(err, AuthService.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "User already exists")
+		}
+		return nil, status.Error(codes.Internal, "Internal error") // "Internal error. Handler.Register()") // dont give away internal errors to clients
 	}
 
 	return &grpcpetv1.RegisterResponse{
@@ -57,7 +66,11 @@ func (s *ServerApi) IsAdmin(ctx context.Context, req *grpcpetv1.IsAdminRequest) 
 
 	IsAdmin, err := s.auth.IsAdmin(ctx, int(req.GetUserId()))
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error. auth.IsAdmin()") // dont give away internal errors to clients
+		// TODO
+		if errors.Is(err, AuthService.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "User not found")
+		}
+		return nil, status.Error(codes.Internal, "Internal error") // dont give away internal errors to clients
 	}
 
 	return &grpcpetv1.IsAdminResponse{

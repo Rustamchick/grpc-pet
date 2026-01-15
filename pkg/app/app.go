@@ -3,7 +3,7 @@ package app
 import (
 	grpcapp "grpc-pet/pkg/app/grpc"
 	"grpc-pet/pkg/repository"
-	"grpc-pet/pkg/repository/postgres"
+	Postgres "grpc-pet/pkg/repository/postgres"
 	Service "grpc-pet/pkg/service"
 	"time"
 
@@ -14,14 +14,13 @@ type App struct {
 	GRPCApp *grpcapp.App
 }
 
-func New(log *logrus.Logger, grpcPort int, storagePath string, tokenTTL time.Duration) *App {
+func New(log *logrus.Logger, grpcPort int, tokenTTL time.Duration) *App {
 	// init storage
-	postgresCfg := postgres.InitPostgresConfig() // TODO POSTGRES CONFIG
-	db, err := postgres.NewPostgresDB(postgresCfg)
+	postgresCfg := Postgres.InitPostgresConfig()
+	db, err := Postgres.NewPostgresDB(postgresCfg)
 	if err != nil {
 		panic(err)
 	}
-	log.Warn("When u make me stop?")
 
 	repos := repository.NewRepository(log, db)
 

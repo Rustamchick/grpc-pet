@@ -1,13 +1,13 @@
 package models
 
 type User struct {
-	ID       int64
-	Email    string
-	PassHash []byte
+	ID       int64  `db:"id"`
+	Email    string `db:"email"`
+	PassHash []byte `db:"password_hash"`
 }
 
 type App struct {
-	ID     int64
-	Name   string
-	Secret string
+	ID    int    `db:"id"`
+	Name  string `db:"name"`
+	Token string `db:"token"`
 }

@@ -8,10 +8,9 @@ import (
 )
 
 type Config struct {
-	Env          string        `yaml:"env" env-default:"local"`
-	Storage_path string        `yaml:"storage_path" env-required:"true"`
-	TokenTTL     time.Duration `yaml:"token_ttl" env-required:"12h"`
-	GRPC         GrpcConfig    `yaml:"grpc"`
+	Env      string        `yaml:"env" env-default:"local"`
+	TokenTTL time.Duration `yaml:"token_ttl" env-defeault:"12h"`
+	GRPC     GrpcConfig    `yaml:"grpc"`
 }
 
 type GrpcConfig struct {
@@ -25,6 +24,10 @@ func InitConfig() Config {
 		panic("Empty config path")
 	}
 
+	return InitConfigByPath(path)
+}
+
+func InitConfigByPath(path string) Config {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		panic("There is no config file in " + path)
 	}
@@ -38,6 +41,8 @@ func InitConfig() Config {
 
 func ConfigPath() string {
 	// в будущем можно сделать дополнительную возможность прописывать путь через флаги
-	res := os.Getenv("CONFIG_PATH")
+	// CONFIG_PATH="D:/Proga/grpc-project/grpc-auth/configs/config.yaml"
+	// res := os.Getenv("CONFIG_PATH")
+	res := "config.yaml"
 	return res
 }

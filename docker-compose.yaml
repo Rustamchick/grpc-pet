@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: rest_grpc_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: grpc_auth
+    depends_on:
+      db:
+          condition: service_healthy
+    ports:
+      - "9090:9090"
+    env_file: 
+      - .env
+    environment:
+      DATABASE_URL: postgres://postgres:12345@db:5432/postgres?sslmode=disable
+
+  migrate:
+    image: migrate/migrate:v4.17.0
+    depends_on:
+      - db
+    entrypoint: [
+      "sh", "-c",
+      "sleep 3 && migrate -path /migrations -database postgres://postgres:12345@db:5432/postgres?sslmode=disable up"
+    ]
+    volumes:
+      - ./migrations:/migrations
+    networks:
+      - default
+
+volumes:
+  db_data:

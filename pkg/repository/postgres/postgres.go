@@ -1,4 +1,4 @@
-package postgres
+package Postgres
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 )
 
 type PostgresConfig struct {
+	URL      string `yaml:"DATABASE_URL"`
 	Host     string `yaml:"host" env-default:"localhost"`
 	Port     string `yaml:"port" env-required:"true"`
 	Username string `yaml:"username" env-default:"postgres"`
@@ -18,7 +19,17 @@ type PostgresConfig struct {
 }
 
 func NewPostgresDB(cfg PostgresConfig) (*sqlx.DB, error) {
-	db, err := sqlx.Open("pgx", fmt.Sprintf("host=%s port=%s password=%s user=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Password, cfg.Username, cfg.DBName, cfg.SSLMode))
+	dataSourceName := os.Getenv("DATABASE_URL") // если в докере
+	if dataSourceName == "" {
+		dataSourceName = cfg.URL // если локально
+		if dataSourceName == "" {
+			dataSourceName = fmt.Sprintf("host=%s port=%s password=%s user=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Password, cfg.Username, cfg.DBName, cfg.SSLMode) // если локально не сработал
+		}
+	}
+
+	fmt.Printf("\ndataSourceName: %s\n", dataSourceName)
+
+	db, err := sqlx.Open("pgx", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +42,7 @@ func NewPostgresDB(cfg PostgresConfig) (*sqlx.DB, error) {
 }
 
 func InitPostgresConfig() PostgresConfig {
-	path := dbCfgPath()
+	path := dbConfigPath()
 	if path == "" {
 		panic("Empty config path")
 	}
@@ -45,12 +56,14 @@ func InitPostgresConfig() PostgresConfig {
 		panic("Error reading config " + err.Error())
 	}
 
-	cfg.Password = os.Getenv("PASSWORD")
+	cfg.Password = os.Getenv("POSTGRES_PASSWORD")
 
 	return *cfg
 }
 
-func dbCfgPath() string {
-	path := os.Getenv("DB_CONFIG_PATH")
+func dbConfigPath() string {
+	// path := os.Getenv("DB_CONFIG_PATH")
+	// DB_CONFIG_PATH="D:/Proga/grpc-project/grpc-auth/configs/dbConfig.yaml"
+	path := "dbConfig.yaml"
 	return path
 }

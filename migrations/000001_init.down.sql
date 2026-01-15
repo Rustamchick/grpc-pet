@@ -1,1 +1,2 @@
-DROP TABLE users;
+DROP TABLE grpc_users;
+DROP TABLE apps;
